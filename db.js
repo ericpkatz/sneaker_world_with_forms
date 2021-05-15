@@ -8,8 +8,21 @@ const createBrand = async(name)=> {
   `, [name])).rows[0];
 };
 
+const createSneaker = async(name, brandId)=> {
+  const SQL = 'INSERT INTO sneakers(name, brand_id) VALUES ($1, $2) RETURNING *';
+  const response = await client.query(SQL, [name, brandId]);
+  return response.rows[0];
+};
+
 const getBrands = async()=> {
   return (await client.query('SELECT * from brands')).rows;
+};
+
+const getSneakersByBrand = async(id)=> {
+  return (await client.query(`
+    SELECT * from sneakers 
+    WHERE brand_id=$1
+  `, [ id ])).rows;
 };
 
 const getBrand = async(id)=> {
@@ -26,26 +39,13 @@ DROP TABLE IF EXISTS collectors;
 
 CREATE TABLE brands(
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100)
+  name VARCHAR(100) UNIQUE
 );
 
 CREATE TABLE sneakers(
-  id INTEGER PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name VARCHAR(100),
   brand_id INTEGER REFERENCES brands(id)
-);
-
-CREATE TABLE collectors(
-  id INTEGER PRIMARY KEY,
-  name VARCHAR(100)
-);
-
-CREATE TABLE ownership(
-  id INTEGER PRIMARY KEY,
-  size INTEGER,
-  condition VARCHAR(10),
-  sneaker_id INTEGER REFERENCES sneakers(id),
-  collector_id INTEGER REFERENCES collectors(id)
 );
   `;
   await client.query(SQL);
@@ -54,6 +54,9 @@ CREATE TABLE ownership(
 module.exports = {
   client,
   getBrands,
+  getBrand,
   createBrand,
+  createSneaker,
+  getSneakersByBrand,
   syncAndSeed
 };
